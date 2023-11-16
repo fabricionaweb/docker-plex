@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv sh
+
+export PLEX_MEDIA_SERVER_INFO_VENDOR="$(grep ^NAME= /etc/os-release | awk -F= '{print $2}' | tr -d \")"
+export PLEX_MEDIA_SERVER_INFO_DEVICE="Docker Container"
+export PLEX_MEDIA_SERVER_INFO_MODEL="$(uname -m)"
+export PLEX_MEDIA_SERVER_INFO_PLATFORM_VERSION="$(uname -r)"
+
+# change chdir
+cd /config
+
+# delete pid before start
+rm -f plexmediaserver.pid
+
+# run with limited permissions
+exec s6-setuidgid $PUID:$PGID /app/Plex\ Media\ Server

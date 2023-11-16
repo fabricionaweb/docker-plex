@@ -1,0 +1,5 @@
+#!/usr/bin/execlineb -P
+
+# up/downs script only runs execlineb (it only runs one line)
+# needs to run as external script
+/etc/s6-overlay/s6-rc.d/claim/run

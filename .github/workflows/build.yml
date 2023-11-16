@@ -25,7 +25,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Get environment from a file
-        run: cat .env >>"$GITHUB_ENV"
+        run: |
+          cat .env >>"$GITHUB_ENV"
+          sed -n -E "/^VERSION=.*/s/VERSION=(.*)-(.*)/TAG=\1/p" .env >>"$GITHUB_ENV"
 
       # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
@@ -43,7 +45,7 @@ jobs:
             # branch
             type=ref,event=branch
             # version
-            type=raw,value=${{ env.VERSION }},enable={{ is_default_branch }}
+            type=raw,value=${{ env.TAG }},enable={{ is_default_branch }}
             # commit
             type=sha,prefix=
 

@@ -15,7 +15,7 @@ ADD https://downloads.plex.tv/plex-media-server-new/$VERSION/debian/plexmediaser
 FROM base AS build-app
 
 # dependencies
-RUN apk add --no-cache dpkg
+RUN apk add --no-cache dpkg binutils
 
 # unpack
 COPY --from=source-app /src/plexmediaserver.deb ./
@@ -24,7 +24,8 @@ RUN dpkg-deb -x ./plexmediaserver.deb ./ && \
     # the same file
     ln -sf ld-musl-$(uname -m).so.1 /build/lib/libc.so && \
     # small clean up
-    rm -rf /build/etc /build/Resources/start.sh /build/lib/plexmediaserver.*
+    rm -rf /build/etc /build/Resources/start.sh /build/lib/plexmediaserver.* && \
+    strip /build/Plex* /build/CrashUploader
 
 # runtime stage ================================================================
 FROM base

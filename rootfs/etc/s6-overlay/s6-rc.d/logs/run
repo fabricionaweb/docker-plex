@@ -1,13 +1,12 @@
 #!/usr/bin/with-contenv sh
 
-LOG_FILE="/config/Plex Media Server/Logs/PMS Plugin Logs/com.plexapp.system.log"
+LOG_FILE="/config/Plex Media Server/Logs/Plex Media Server.log"
 
 # create initial log file
 if [[ ! -f "$LOG_FILE" ]]; then
   install -dm755 -o $PUID -g $PGID \
     "/config/Plex Media Server" \
-    "/config/Plex Media Server/Logs" \
-    "/config/Plex Media Server/Logs/PMS Plugin Logs"
+    "/config/Plex Media Server/Logs"
 
   install -m600 -o $PUID -g $PGID /dev/null "$LOG_FILE"
 fi

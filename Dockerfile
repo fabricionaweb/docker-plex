@@ -37,12 +37,12 @@ WORKDIR /config
 VOLUME /config
 EXPOSE 32400
 
-# runtime dependencies
-RUN apk add --no-cache tzdata s6-overlay uuidgen bash curl
-
 # copy files
 COPY --from=build-app /build /app
 COPY ./rootfs/. /
+
+# runtime dependencies
+RUN apk add --no-cache tzdata s6-overlay uuidgen bash curl
 
 # run using s6-overlay
 ENTRYPOINT ["/init"]

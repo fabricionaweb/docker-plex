@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1-labs
-FROM public.ecr.aws/docker/library/alpine:3.21 AS base
-ENV TZ=UTC
+FROM public.ecr.aws/docker/library/ubuntu:22.04 AS base
+ENV TZ=UTC DEBIAN_FRONTEND=noninteractive
 WORKDIR /src
 
 # source backend stage =========================================================
 FROM base AS source-app
 
-# get and extract source from git
+# get package
 ARG TARGETARCH
 ARG VERSION
 ADD https://downloads.plex.tv/plex-media-server-new/$VERSION/debian/plexmediaserver_${VERSION}_${TARGETARCH}.deb ./plexmediaserver.deb
@@ -14,18 +14,23 @@ ADD https://downloads.plex.tv/plex-media-server-new/$VERSION/debian/plexmediaser
 # build stage ==================================================================
 FROM base AS build-app
 
-# dependencies
-RUN apk add --no-cache dpkg binutils
+# prepare s6
+ARG S6_OVERLAY_VERSION=3.2.0.2
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-noarch.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-arch.tar.xz /tmp
+RUN apt update && \
+    apt install -y xz-utils && \
+    mkdir /s6 && \
+    ls /tmp/s6-overlay-*.tar.xz | xargs -n1 tar -C /s6 -Jxpf
 
-# unpack
+# unpack package
 COPY --from=source-app /src/plexmediaserver.deb ./
 RUN dpkg-deb -x ./plexmediaserver.deb ./ && \
     mv ./usr/lib/plexmediaserver /build && \
-    # the same file
-    ln -sf ld-musl-$(uname -m).so.1 /build/lib/libc.so && \
     # small clean up
-    rm -rf /build/etc /build/Resources/start.sh /build/lib/plexmediaserver.* && \
-    strip /build/Plex* /build/CrashUploader
+    rm -rf /build/etc /build/Resources/start.sh /build/lib/plexmediaserver.*
 
 # runtime stage ================================================================
 FROM base
@@ -38,11 +43,14 @@ VOLUME /config
 EXPOSE 32400
 
 # copy files
+COPY --from=build-app /s6/. /
 COPY --from=build-app /build /app
 COPY ./rootfs/. /
 
 # runtime dependencies
-RUN apk add --no-cache tzdata s6-overlay uuidgen bash curl
+RUN apt update && \
+    apt install -y tzdata uuid-runtime curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # run using s6-overlay
 ENTRYPOINT ["/init"]
